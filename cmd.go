@@ -40,3 +40,9 @@ func cmdStatus() (bytes.Buffer, error) {
 func cmdListItems(key string) (bytes.Buffer, error) {
 	return cmdAndOutput("list", "items", "--session", key) // bundle with bw.exe
 }
+
+func AutoType(un, pw string) {
+	cmd := exec.Command("autotype.exe", un, pw)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	cmd.Start()
+}

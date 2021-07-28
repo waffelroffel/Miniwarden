@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/lxn/walk"
 	"github.com/lxn/walk/declarative"
 	"github.com/lxn/win"
@@ -30,15 +28,15 @@ func (gmw *GowardMainWindow) res_Update() {
 }
 
 func (gmw *GowardMainWindow) res_ToClipboard(i int) {
-	if i < ranking.Len() {
-		fatal(walk.Clipboard().SetText(session.Decrypt(ranking[i].Login.Password)))
-	}
 	st = gmw.fss.Text()
 	gmw.Dispose()
+
+	pw := session.Decrypt(ranking[i].Login.Password)
+	fatal(walk.Clipboard().SetText(pw))
+	AutoType(ranking[i].Login.Username, pw)
 }
 
 func (gmw *GowardMainWindow) fss_OnTextChange() {
-	fmt.Println(gmw.Height())
 	if gmw.fss.Text() == "" {
 		ranking = gmw.model.items
 	} else {
