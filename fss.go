@@ -30,10 +30,9 @@ func (gmw *GowardMainWindow) res_Update() {
 func (gmw *GowardMainWindow) res_ToClipboard(i int) {
 	st = gmw.fss.Text()
 	gmw.Dispose()
-
-	pw := session.Decrypt(ranking[i].Login.Password)
-	fatal(walk.Clipboard().SetText(pw))
-	AutoType(ranking[i].Login.Username, pw)
+	// pw := session.Decrypt(ranking[i].Login.Password)
+	// fatal(walk.Clipboard().SetText(pw))
+	go AutoType(ranking[i].Login.Username, ranking[i].Login.Password)
 }
 
 func (gmw *GowardMainWindow) fss_OnTextChange() {
