@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/lxn/walk"
 	"github.com/lxn/walk/declarative"
 	"github.com/lxn/win"
@@ -12,7 +14,6 @@ var (
 	gmwH    = 200
 	gmwX    = screenX - gmwW
 	gmwY    = 40
-	st      = ""
 	ranking = Entries{}
 )
 
@@ -23,15 +24,33 @@ type GowardMainWindow struct {
 	model *Model
 }
 
+func (gmw *GowardMainWindow) SetBestMatchingURI() {
+	tokens := strings.Split(GetActiveWindow(), " ")
+	best := ""
+	bestscore := 0
+	for _, t := range tokens {
+		if len(t) <= 1 {
+			continue
+		}
+		res := fuzzy.FindFrom(t, gmw.model.items)
+		if res.Len() == 0 {
+			continue
+		}
+		if res[0].Score > bestscore {
+			best = res[0].Str
+			bestscore = res[0].Score
+		}
+	}
+	gmw.fss.SetText(best)
+	gmw.fss.SetTextSelection(0, len(best))
+}
+
 func (gmw *GowardMainWindow) res_Update() {
 	gmw.res.SetModel(InitModel(&ranking))
 }
 
 func (gmw *GowardMainWindow) res_ToClipboard(i int) {
-	st = gmw.fss.Text()
 	gmw.Dispose()
-	// pw := session.Decrypt(ranking[i].Login.Password)
-	// fatal(walk.Clipboard().SetText(pw))
 	go AutoType(ranking[i].Login.Username, ranking[i].Login.Password)
 }
 
@@ -141,8 +160,7 @@ func (gmw *GowardMainWindow) Start(pos uint) {
 		}
 		gmw.SetBounds(bounds)
 	}
-	gmw.fss.SetText(st)
-	gmw.fss.SetTextSelection(0, len(st))
+	gmw.SetBestMatchingURI()
 	gmw.fss_OnTextChange()
 	gmw.SetIcon(icon)
 	setDefaultStyle(gmw.Handle())
