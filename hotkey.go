@@ -2,7 +2,6 @@ package main
 
 import (
 	"runtime"
-	"syscall"
 
 	"github.com/lxn/win"
 )
@@ -14,12 +13,6 @@ const (
 	Win
 )
 
-var (
-	user32         = syscall.NewLazyDLL("user32")
-	rhk            = user32.NewProc("RegisterHotKey")
-	hkid   uintptr = 0
-)
-
 type HotKey struct {
 	Id        uintptr
 	Modifiers uintptr
@@ -28,7 +21,8 @@ type HotKey struct {
 }
 
 type HotKeys struct {
-	hotkeys map[uintptr]HotKey
+	hotkeys    map[uintptr]HotKey
+	numHotkeys uintptr
 }
 
 func (hkm *HotKeys) Init() {
@@ -36,21 +30,23 @@ func (hkm *HotKeys) Init() {
 }
 
 func (hkm *HotKeys) Register(mods uintptr, kc uintptr) chan bool {
-	hkid++
-	rhk.Call(0, hkid, mods, kc)
-	hkm.hotkeys[hkid] = HotKey{
-		Id:        hkid,
+	hkm.numHotkeys++
+	err := registerHotKey(hkm.numHotkeys, mods, kc)
+	fatal(err)
+
+	hkm.hotkeys[hkm.numHotkeys] = HotKey{
+		Id:        hkm.numHotkeys,
 		Modifiers: mods,
 		KeyCode:   kc,
 		channel:   make(chan bool),
 	}
-	return hkm.hotkeys[hkid].channel
+	return hkm.hotkeys[hkm.numHotkeys].channel
 }
 
 func (hkm *HotKeys) Listen() {
 	runtime.LockOSThread()
+	msg := &win.MSG{}
 	for {
-		msg := &win.MSG{}
 		win.GetMessage(msg, 0, 0, 0)
 		hkm.hotkeys[msg.WParam].channel <- true
 	}

@@ -5,13 +5,15 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"io"
+	"os"
 )
 
 type Session struct {
 	UserEmail string
 	Key       string
-	entries   Entries
+	entries   []Entry
 	sec       [32]byte
 }
 
@@ -19,7 +21,7 @@ func (s *Session) Clear() {
 	s.ClearFromDisk()
 	s.UserEmail = ""
 	s.Key = ""
-	s.entries = Entries{}
+	s.entries = []Entry{}
 	s.sec = [32]byte{}
 }
 
@@ -37,10 +39,13 @@ func (s *Session) FetchAllEntries() {
 
 	out, err := cmdListItems(s.Key)
 	if err != nil {
-		s.Key = "" // add logic for incorrect s.key
+		s.Key = ""
+		s.FetchAllEntries()
 		return
 	}
+
 	fatal(json.NewDecoder(&out).Decode(&s.entries))
+	warning(session.SaveSessionKey())
 	session.InitSec()
 	session.EncryptAll()
 }
@@ -51,8 +56,8 @@ func (s *Session) InitSec() {
 }
 
 func (s *Session) EncryptAll() {
-	for i := 0; i < s.entries.Len(); i++ {
-		pt := []byte(s.entries[i].Login.Password)
+	for i, entry := range s.entries {
+		pt := []byte(entry.Login.Password)
 
 		block, err := aes.NewCipher(s.sec[:])
 		fatal(err)
@@ -69,8 +74,8 @@ func (s *Session) EncryptAll() {
 	}
 }
 
-func (s *Session) Decrypt(ncts string) string {
-	nct := []byte(ncts)
+func (s *Session) Decrypt(epw string) string {
+	nct := []byte(epw)
 
 	block, err := aes.NewCipher(s.sec[:])
 	fatal(err)
@@ -84,4 +89,27 @@ func (s *Session) Decrypt(ncts string) string {
 	fatal(err)
 
 	return string(pt)
+}
+
+func (s *Session) SaveSessionKey() error {
+	if err := os.Mkdir(confDir, 0600); !errors.Is(err, os.ErrExist) {
+		return err
+	}
+	return os.WriteFile(confFile, []byte(s.Key), 0600)
+}
+
+func (s *Session) LoadSessionKey() error {
+	b, err := os.ReadFile(confFile)
+	if err != nil {
+		return err
+	}
+	s.Key = string(b)
+	return nil
+}
+
+func (s *Session) ClearFromDisk() error {
+	if err := os.Mkdir(confDir, 0600); !errors.Is(err, os.ErrExist) {
+		return err
+	}
+	return os.WriteFile(confFile, []byte{}, 0600)
 }

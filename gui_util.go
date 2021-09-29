@@ -13,11 +13,6 @@ var (
 
 func getIconFromResource() *walk.Icon {
 	icon, _ := walk.NewIconFromResourceId(2)
-	/*
-		if err != nil {
-			// show err
-		}
-	*/
 	return icon
 }
 

@@ -17,64 +17,12 @@ var (
 	confFile       = filepath.Join(confDir, "bwgo_conf.txt")
 )
 
-type App struct {
-	User    *systray.MenuItem
-	Search  *systray.MenuItem
-	Sync    *systray.MenuItem
-	SignIn  *systray.MenuItem
-	SignOut *systray.MenuItem
-	Quit    *systray.MenuItem
-}
-
-func (app *App) Init() {
-	systray.SetIcon(iconData)
-	systray.SetTitle("Miniwarden")
-	systray.SetTooltip("Miniwarden")
-
-	app.User = systray.AddMenuItem(session.UserEmail, "")
-	systray.AddSeparator()
-	app.Search = systray.AddMenuItem("Search", "Search through vault")
-	app.Sync = systray.AddMenuItem("Sync", "Update vault state")
-	systray.AddSeparator()
-	app.SignIn = systray.AddMenuItem("Sign in", "Sign in to account")
-	app.SignOut = systray.AddMenuItem("Sign out", "Sign out of account")
-	app.Quit = systray.AddMenuItem("Quit", "Quit service")
-
-	app.User.Disable()
-
-	if session.UserEmail == "" {
-		app.SetSignedOut()
-		session.Clear()
-	} else {
-		app.SetSignedIn()
-		session.FetchAllEntries()
-		session.SaveToDisk() // make optional
-	}
-}
-
-func (app *App) SetSignedIn() {
-	app.User.SetTitle(session.UserEmail)
-	app.Search.Show()
-	app.Sync.Show()
-	app.SignIn.Hide()
-	app.SignOut.Show()
-}
-
-func (app *App) SetSignedOut() {
-	app.User.SetTitle("Not signed in")
-	app.Search.Hide()
-	app.Sync.Hide()
-	app.SignIn.Show()
-	app.SignOut.Hide()
-}
-
 func main() {
 	fatal(hderr)
 	session.FetchUserEmail()
-	session.LoadFromDisk()
+	warning(session.LoadSessionKey())
 
-	defer systray.Quit()
-	systray.Run(onReady, onExit)
+	systray.Run(onReady, nil)
 }
 
 func onReady() {
@@ -86,20 +34,18 @@ func onReady() {
 		for {
 			select {
 			case <-search:
-				MakeGMW(&session.entries).Start(0) // return if not logged in
+				MakeGMW(&session.entries).Start(0)
 			case <-app.Search.ClickedCh:
-				MakeGMW(&session.entries).Start(1) // return if not logged in
+				MakeGMW(&session.entries).Start(1)
 			case <-app.Sync.ClickedCh:
 				session.FetchAllEntries()
-				session.SaveToDisk() // make optional
 			case <-app.SignIn.ClickedCh:
 				session.FetchAllEntries()
 				if session.UserEmail != "" {
-					app.SetSignedIn()    // split into login, sync
-					session.SaveToDisk() // make optional
+					app.SetSignedIn()
 				}
 			case <-app.SignOut.ClickedCh:
-				fatal(cmdLogout()) // add popup for errors
+				fatal(cmdLogout())
 				app.SetSignedOut()
 				session.Clear()
 			case <-app.Quit.ClickedCh:
@@ -110,12 +56,14 @@ func onReady() {
 	go hotkeys.Listen()
 }
 
-func onExit() {
-	session.SaveToDisk()
-}
-
 func fatal(err error) {
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+
+func warning(err error) {
+	if err != nil {
+		log.Println(err)
 	}
 }

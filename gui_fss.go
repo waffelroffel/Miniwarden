@@ -14,7 +14,7 @@ var (
 	gmwH    = 200
 	gmwX    = screenX - gmwW
 	gmwY    = 40
-	ranking = Entries{}
+	ranking = []Entry{}
 )
 
 type GowardMainWindow struct {
@@ -24,15 +24,42 @@ type GowardMainWindow struct {
 	model *Model
 }
 
-func (gmw *GowardMainWindow) SetBestMatchingURI() {
-	tokens := strings.Split(GetActiveWindow(), " ")
+type Model struct {
+	walk.ListModelBase
+	items []Entry
+}
+
+func (m *Model) String(i int) string {
+	return m.items[i].Name
+}
+
+func (m *Model) Value(i int) interface{} {
+	return m.String(i) + " - " + m.items[i].Login.Username
+}
+
+func (m *Model) Len() int {
+	return m.ItemCount()
+}
+
+func (m *Model) ItemCount() int {
+	return len(m.items)
+}
+
+func (gmw *GowardMainWindow) findBestMatchingEntry() {
+	winText, err := GetActiveWindow()
+	if err != nil {
+		warning(err)
+		return
+	}
+
+	tokens := strings.Split(winText, " ")
 	best := ""
 	bestscore := 0
 	for _, t := range tokens {
 		if len(t) <= 1 {
 			continue
 		}
-		res := fuzzy.FindFrom(t, gmw.model.items)
+		res := fuzzy.FindFrom(t, gmw.model)
 		if res.Len() == 0 {
 			continue
 		}
@@ -46,10 +73,10 @@ func (gmw *GowardMainWindow) SetBestMatchingURI() {
 }
 
 func (gmw *GowardMainWindow) res_Update() {
-	gmw.res.SetModel(InitModel(&ranking))
+	fatal(gmw.res.SetModel(initModel(&ranking)))
 }
 
-func (gmw *GowardMainWindow) res_ToClipboard(i int) {
+func (gmw *GowardMainWindow) res_AutoType(i int) {
 	gmw.Dispose()
 	go AutoType(ranking[i].Login.Username, ranking[i].Login.Password)
 }
@@ -58,8 +85,8 @@ func (gmw *GowardMainWindow) fss_OnTextChange() {
 	if gmw.fss.Text() == "" {
 		ranking = gmw.model.items
 	} else {
-		results := fuzzy.FindFrom(gmw.fss.Text(), gmw.model.items)
-		ranking = make(Entries, results.Len())
+		results := fuzzy.FindFrom(gmw.fss.Text(), gmw.model)
+		ranking = make([]Entry, results.Len())
 		for i, r := range results {
 			ranking[i] = gmw.model.items[r.Index]
 		}
@@ -70,65 +97,25 @@ func (gmw *GowardMainWindow) fss_OnTextChange() {
 func (gmw *GowardMainWindow) fss_OnKeyDown(key walk.Key) {
 	switch key.String() {
 	case "Return":
-		gmw.res_ToClipboard(0)
+		gmw.res_AutoType(0)
 	}
-	// TODO TBD
 }
 
 func (gmw *GowardMainWindow) res_OnItemActivated() {
-	gmw.res_ToClipboard(gmw.res.CurrentIndex())
+	gmw.res_AutoType(gmw.res.CurrentIndex())
 }
 
-type Uri struct {
-	Uri string
-}
-
-type Login struct {
-	Uris     []Uri
-	Username string
-	Password string
-}
-
-type Entry struct {
-	Name  string
-	Login Login
-	Type  uint8 // int
-}
-
-type Entries []Entry
-
-func (es Entries) String(i int) string {
-	return es[i].Name
-}
-
-func (es Entries) Len() int {
-	return len(es)
-}
-
-type Model struct {
-	walk.ListModelBase
-	items Entries
-}
-
-func (m *Model) ItemCount() int {
-	return len(m.items)
-}
-
-func (m *Model) Value(index int) interface{} {
-	return m.items[index].Name + " - " + m.items[index].Login.Username
-}
-
-func InitModel(entries *Entries) *Model {
+func initModel(entries *[]Entry) *Model {
 	return &Model{items: *entries}
 }
 
-func MakeGMW(entries *Entries) *GowardMainWindow {
+func MakeGMW(entries *[]Entry) *GowardMainWindow {
 	ranking = *entries
-	return &GowardMainWindow{model: InitModel(entries)}
+	return &GowardMainWindow{model: initModel(entries)}
 }
 
-func (gmw *GowardMainWindow) Start(pos uint) {
-	err := declarative.MainWindow{ // change to dialog
+func (gmw *GowardMainWindow) Start(pos int) {
+	err := declarative.MainWindow{
 		AssignTo: &gmw.MainWindow,
 		Title:    "MW Search",
 		Layout:   declarative.VBox{MarginsZero: true},
@@ -160,8 +147,7 @@ func (gmw *GowardMainWindow) Start(pos uint) {
 		}
 		gmw.SetBounds(bounds)
 	}
-	gmw.SetBestMatchingURI()
-	gmw.fss_OnTextChange()
+	gmw.findBestMatchingEntry()
 	gmw.SetIcon(icon)
 	setDefaultStyle(gmw.Handle())
 	gmw.Run()

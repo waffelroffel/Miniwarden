@@ -30,16 +30,16 @@ func (glw *GowardLoginWindow) un_OnKeyDown(key walk.Key) {
 
 func (glw *GowardLoginWindow) pw_OnKeyDown(key walk.Key) {
 	if key.String() == "Return" {
-		glw.Login()
+		glw.login()
 	}
 }
 
-func (glw *GowardLoginWindow) Login() {
+func (glw *GowardLoginWindow) login() {
 	glw.si.SetEnabled(false)
 	out, err := cmdLogin(glw.un.Text(), glw.pw.Text())
 	if err != nil {
 		if strings.Index(out.String(), "You are already logged in as") == 0 {
-			glw.Unlock()
+			glw.unlock()
 		} else {
 			glw.o.SetText(out.String())
 			glw.si.SetEnabled(true)
@@ -52,7 +52,7 @@ func (glw *GowardLoginWindow) Login() {
 	glw.Dispose()
 }
 
-func (glw *GowardLoginWindow) Unlock() {
+func (glw *GowardLoginWindow) unlock() {
 	out, err := cmdUnlock(glw.pw.Text())
 	if err != nil {
 		glw.o.SetText(out.String())
@@ -62,7 +62,7 @@ func (glw *GowardLoginWindow) Unlock() {
 	session.UserEmail = glw.un.Text()
 	arr := strings.Split(out.String(), " ")
 	session.Key = arr[len(arr)-1]
-	glw.Dispose() // change to show-hide
+	glw.Dispose()
 }
 
 func (glw *GowardLoginWindow) Start() {
@@ -83,7 +83,11 @@ func (glw *GowardLoginWindow) Start() {
 				PasswordMode: true,
 				OnKeyDown:    glw.pw_OnKeyDown,
 			},
-			declarative.PushButton{AssignTo: &glw.si, Text: "Sign in", OnClicked: glw.Login},
+			declarative.PushButton{
+				AssignTo:  &glw.si,
+				Text:      "Sign in",
+				OnClicked: glw.login,
+			},
 			declarative.Label{AssignTo: &glw.o},
 		},
 	}.Create()

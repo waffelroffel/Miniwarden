@@ -1,12 +1,9 @@
 rsrc:
 	rsrc -ico icon.ico -manifest miniwarden.manifest -o rsrc.syso
 
-ahk:
-	ahk2exe /in autotype.ahk /out "bin\autotype.exe"
+debug: rsrc
+	go build -o test/Miniwarden-test.exe .
+	test/Miniwarden-test
 
-debug: rsrc ahk
-	go build -o bin/Miniwarden.exe .
-	bin/Miniwarden
-
-prod: rsrc ahk
+prod: rsrc
 	go build -ldflags -H=windowsgui -o bin/Miniwarden.exe .
