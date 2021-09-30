@@ -46,8 +46,7 @@ func GetActiveWindow() (string, error) {
 }
 
 func registerHotKey(hkid, mods, kc uintptr) error {
-	_, _, err := _registerHotKey.Call(0, hkid, mods, kc)
-	if callError(err) {
+	if _, _, err := _registerHotKey.Call(0, hkid, mods, kc); callError(err) {
 		return err
 	}
 	return nil

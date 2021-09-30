@@ -15,9 +15,15 @@ var (
 	homeDir, hderr = os.UserHomeDir()
 	confDir        = filepath.Join(homeDir, ".bwgo")
 	confFile       = filepath.Join(confDir, "bwgo_conf.txt")
+	errLogFile     = filepath.Join(confDir, "log.txt")
 )
 
 func main() {
+	f, err := os.OpenFile(errLogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	warning(err)
+	defer f.Close()
+	log.SetOutput(f)
+
 	fatal(hderr)
 	session.FetchUserEmail()
 	warning(session.LoadSessionKey())
@@ -38,6 +44,7 @@ func onReady() {
 			case <-app.Search.ClickedCh:
 				MakeGMW(&session.entries).Start(1)
 			case <-app.Sync.ClickedCh:
+				session.Sync()
 				session.FetchAllEntries()
 			case <-app.SignIn.ClickedCh:
 				session.FetchAllEntries()
@@ -58,12 +65,12 @@ func onReady() {
 
 func fatal(err error) {
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("[error] %v", err)
 	}
 }
 
 func warning(err error) {
 	if err != nil {
-		log.Println(err)
+		log.Printf("[warning] %v", err)
 	}
 }

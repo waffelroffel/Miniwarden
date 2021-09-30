@@ -18,7 +18,7 @@ type Session struct {
 }
 
 func (s *Session) Clear() {
-	s.ClearFromDisk()
+	warning(s.ClearSession())
 	s.UserEmail = ""
 	s.Key = ""
 	s.entries = []Entry{}
@@ -29,6 +29,10 @@ func (s *Session) FetchUserEmail() {
 	out, err := cmdStatus()
 	fatal(err)
 	fatal(json.NewDecoder(&out).Decode(&session))
+}
+
+func (s *Session) Sync() {
+	warning(cmdSync(s.Key))
 }
 
 func (s *Session) FetchAllEntries() {
@@ -44,7 +48,15 @@ func (s *Session) FetchAllEntries() {
 		return
 	}
 
-	fatal(json.NewDecoder(&out).Decode(&s.entries))
+	allEntries := []Entry{}
+	fatal(json.NewDecoder(&out).Decode(&allEntries))
+
+	for _, e := range allEntries {
+		if e.Type == 1 || e.Login.Totp == "" {
+			s.entries = append(s.entries, e)
+		}
+	}
+
 	warning(session.SaveSessionKey())
 	session.InitSec()
 	session.EncryptAll()
@@ -107,7 +119,7 @@ func (s *Session) LoadSessionKey() error {
 	return nil
 }
 
-func (s *Session) ClearFromDisk() error {
+func (s *Session) ClearSession() error {
 	if err := os.Mkdir(confDir, 0600); !errors.Is(err, os.ErrExist) {
 		return err
 	}

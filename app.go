@@ -19,7 +19,7 @@ func (app *App) Init() {
 	app.User = systray.AddMenuItem(session.UserEmail, "")
 	systray.AddSeparator()
 	app.Search = systray.AddMenuItem("Search", "Search through vault")
-	app.Sync = systray.AddMenuItem("Sync", "Update vault state")
+	app.Sync = systray.AddMenuItem("Sync", "Sync vault state")
 	systray.AddSeparator()
 	app.SignIn = systray.AddMenuItem("Sign in", "Sign in to account")
 	app.SignOut = systray.AddMenuItem("Sign out", "Sign out of account")
