@@ -51,8 +51,9 @@ func (s *Session) FetchAllEntries() {
 	allEntries := []Entry{}
 	fatal(json.NewDecoder(&out).Decode(&allEntries))
 
+	s.entries = []Entry{}
 	for _, e := range allEntries {
-		if e.Type == 1 || e.Login.Totp == "" {
+		if e.Type == 1 && e.Reprompt == 0 && e.Login.Totp == "" {
 			s.entries = append(s.entries, e)
 		}
 	}

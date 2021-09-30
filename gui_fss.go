@@ -30,11 +30,14 @@ type Model struct {
 }
 
 func (m *Model) String(i int) string {
-	return m.items[i].Name
+	return m.items[i].Name + " - " + m.items[i].Login.Username
 }
 
 func (m *Model) Value(i int) interface{} {
-	return m.String(i) + " - " + m.items[i].Login.Username
+	if m.items[i].Login.Username == "" {
+		return m.items[i].Name
+	}
+	return m.items[i].Name + " - " + m.items[i].Login.Username
 }
 
 func (m *Model) Len() int {
