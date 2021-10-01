@@ -35,16 +35,20 @@ func (s *Session) Sync() {
 	warning(cmdSync(s.Key))
 }
 
-func (s *Session) FetchAllEntries() {
+func (s *Session) SignIn() {
 	if s.Key == "" {
-		gwl := GowardLoginWindow{}
-		gwl.Start()
+		(&GowardLoginWindow{}).Start()
+	}
+}
+
+func (s *Session) LoadAllEntries() {
+	if s.Key == "" {
+		session.SignIn()
 	}
 
 	out, err := cmdListItems(s.Key)
 	if err != nil {
-		s.Key = ""
-		s.FetchAllEntries()
+		warning(err)
 		return
 	}
 

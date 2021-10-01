@@ -45,11 +45,12 @@ func onReady() {
 				MakeGMW(&session.entries).Start(1)
 			case <-app.Sync.ClickedCh:
 				session.Sync()
-				session.FetchAllEntries()
+				session.LoadAllEntries()
 			case <-app.SignIn.ClickedCh:
-				session.FetchAllEntries()
+				session.SignIn()
 				if session.UserEmail != "" {
 					app.SetSignedIn()
+					session.LoadAllEntries()
 				}
 			case <-app.SignOut.ClickedCh:
 				fatal(cmdLogout())

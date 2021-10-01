@@ -32,7 +32,7 @@ func (app *App) Init() {
 		session.Clear()
 	} else {
 		app.SetSignedIn()
-		session.FetchAllEntries()
+		session.LoadAllEntries()
 	}
 }
 
