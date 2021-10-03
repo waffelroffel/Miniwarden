@@ -1,6 +1,6 @@
 # Miniwarden
 
-A simple readonly Bitwarden client for Windows using Bitwarden CLI.
+A lightweight readonly Bitwarden client for Windows using Bitwarden CLI.
 
 ## Features
 
@@ -30,8 +30,8 @@ Get the project ready with
 
 ```
 git clone https://github.com/waffelroffel/Miniwarden
-go get
-go get github.com/akavel/rsrc
+go get -d
+go install github.com/akavel/rsrc
 rsrc -ico icon.ico -manifest miniwarden.manifest -o rsrc.syso
 ```
 
